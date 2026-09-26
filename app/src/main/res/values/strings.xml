@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">Co-Rider</string>
+    <string name="menu_open">Menü öffnen</string>
+    <string name="open_gpx">GPX-Datei öffnen</string>
+    <string name="choose_gpx">GPX-Datei auswählen</string>
+    <string name="recently_used">Zuletzt verwendet</string>
+    <string name="no_recent_routes">Noch keine GPX-Dateien importiert</string>
+    <string name="appearance">Darstellung</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="empty_title">Bereit für deine nächste Tour?</string>
+    <string name="empty_description">Wähle eine GPX-Datei aus. Co-Rider kopiert sie sicher in den internen App-Speicher.</string>
+    <string name="active_route">Aktive Route</string>
+    <string name="stored_locally">Lokal gespeichert</string>
+    <string name="choose_another_gpx">Andere GPX-Datei auswählen</string>
+    <string name="import_failed">Die GPX-Datei konnte nicht importiert werden.</string>
 </resources>
