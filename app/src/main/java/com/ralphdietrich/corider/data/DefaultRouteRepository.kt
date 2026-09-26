@@ -1,12 +1,19 @@
 package com.ralphdietrich.corider.data
 
 import com.ralphdietrich.corider.domain.GpxImportSource
+import com.ralphdietrich.corider.domain.GpxParser
+import com.ralphdietrich.corider.domain.MapsRouteUrlFactory
 import com.ralphdietrich.corider.domain.RouteRepository
+import com.ralphdietrich.corider.domain.RouteDetailsAnalyzer
+import com.ralphdietrich.corider.domain.DefaultMapsRouteUrlFactory
+import com.ralphdietrich.corider.domain.SaxGpxParser
 import com.ralphdietrich.corider.domain.model.GpxRoute
 import com.ralphdietrich.corider.domain.model.RouteLibrary
+import com.ralphdietrich.corider.domain.model.RouteDetails
 import com.ralphdietrich.corider.domain.model.ThemeMode
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,6 +21,9 @@ import kotlinx.coroutines.sync.withLock
 class DefaultRouteRepository(
     private val preferencesStore: AppPreferencesStore,
     private val fileStore: GpxFileStore,
+    private val gpxParser: GpxParser = SaxGpxParser(),
+    private val mapsRouteUrlFactory: MapsRouteUrlFactory = DefaultMapsRouteUrlFactory(),
+    private val routeDetailsAnalyzer: RouteDetailsAnalyzer = RouteDetailsAnalyzer(),
     private val now: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) : RouteRepository {
@@ -76,8 +86,23 @@ class DefaultRouteRepository(
         Unit
     }
 
+    override suspend fun createMapsRouteUrl(routeId: String): String = writeMutex.withLock {
+        mapsRouteUrlFactory.createUrl(parseRoute(routeId))
+    }
+
+    override suspend fun loadRouteDetails(routeId: String): RouteDetails = writeMutex.withLock {
+        routeDetailsAnalyzer.analyze(parseRoute(routeId))
+    }
+
     override suspend fun setThemeMode(mode: ThemeMode) = writeMutex.withLock {
         preferencesStore.update { current -> current.copy(themeMode = mode) }
         Unit
     }
+
+    private suspend fun parseRoute(routeId: String) =
+        preferencesStore.state.first().routes.firstOrNull { it.id == routeId }
+            ?.let { route ->
+                fileStore.open(route.internalFileName).use { input -> gpxParser.parse(input) }
+            }
+            ?: error("The selected route no longer exists")
 }

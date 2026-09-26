@@ -3,15 +3,20 @@ package com.ralphdietrich.corider.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -20,7 +25,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,12 +41,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -49,13 +57,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ralphdietrich.corider.R
+import com.ralphdietrich.corider.domain.model.ElevationSample
 import com.ralphdietrich.corider.domain.model.GpxRoute
+import com.ralphdietrich.corider.domain.model.RouteDetails
+import com.ralphdietrich.corider.domain.model.RoutePosition
+import com.ralphdietrich.corider.domain.model.RoutePositionKind
 import com.ralphdietrich.corider.domain.model.ThemeMode
 import kotlinx.coroutines.launch
 
@@ -65,6 +83,8 @@ private val GpxMimeTypes = arrayOf(
     "text/xml",
     "application/octet-stream",
 )
+private val FileNameSeparators = Regex("[-_]+")
+private val RepeatedWhitespace = Regex("\\s+")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,12 +93,15 @@ fun CoRiderApp(
     onDocumentSelected: (Uri) -> Unit,
     onRouteSelected: (String) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
+    onOpenInMaps: () -> Unit,
     onImportErrorShown: () -> Unit,
+    onMapsRouteErrorShown: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val importErrorText = stringResource(R.string.import_failed)
+    val mapsRouteErrorText = stringResource(R.string.maps_route_failed)
     val documentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let(onDocumentSelected) }
@@ -91,6 +114,13 @@ fun CoRiderApp(
         if (uiState.importFailed) {
             snackbarHostState.showSnackbar(importErrorText)
             onImportErrorShown()
+        }
+    }
+
+    LaunchedEffect(uiState.mapsRouteFailed) {
+        if (uiState.mapsRouteFailed) {
+            snackbarHostState.showSnackbar(mapsRouteErrorText)
+            onMapsRouteErrorShown()
         }
     }
 
@@ -125,10 +155,20 @@ fun CoRiderApp(
                     },
                 )
             },
+            bottomBar = {
+                if (uiState.activeRoute != null) {
+                    RouteActionBar(
+                        isImporting = uiState.isImporting,
+                        isPreparingRoute = uiState.isPreparingRoute,
+                        canOpenInMaps = uiState.routeDetails != null,
+                        onOpenDocument = openDocument,
+                        onOpenInMaps = onOpenInMaps,
+                    )
+                }
+            },
         ) { contentPadding ->
             MainContent(
-                activeRoute = uiState.activeRoute,
-                isImporting = uiState.isImporting,
+                uiState = uiState,
                 onOpenDocument = openDocument,
                 modifier = Modifier.padding(contentPadding),
             )
@@ -148,7 +188,7 @@ private fun AppDrawer(
     ModalDrawerSheet(modifier = Modifier.widthIn(max = 360.dp)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp),
         ) {
             item {
                 Text(
@@ -229,12 +269,7 @@ private fun ThemeModeItem(
     }
     NavigationDrawerItem(
         label = { Text(label) },
-        icon = {
-            RadioButton(
-                selected = selected,
-                onClick = null,
-            )
-        },
+        icon = { RadioButton(selected = selected, onClick = null) },
         selected = selected,
         onClick = onClick,
         modifier = Modifier.padding(horizontal = 12.dp),
@@ -243,22 +278,25 @@ private fun ThemeModeItem(
 
 @Composable
 private fun MainContent(
-    activeRoute: GpxRoute?,
-    isImporting: Boolean,
+    uiState: MainUiState,
     onOpenDocument: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (activeRoute == null) {
-            EmptyState(isImporting, onOpenDocument)
-        } else {
-            ActiveRouteState(activeRoute, isImporting, onOpenDocument)
+    if (uiState.activeRoute == null) {
+        Box(
+            modifier = modifier.fillMaxSize().padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            EmptyState(uiState.isImporting, onOpenDocument)
         }
+    } else {
+        RouteDetailsContent(
+            route = uiState.activeRoute,
+            details = uiState.routeDetails,
+            isLoading = uiState.isLoadingRouteDetails,
+            loadingFailed = uiState.routeDetailsFailed,
+            modifier = modifier,
+        )
     }
 }
 
@@ -301,69 +339,485 @@ private fun EmptyState(
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(28.dp))
-        ImportButton(isImporting, onOpenDocument, R.string.choose_gpx)
+        Button(onClick = onOpenDocument, enabled = !isImporting) {
+            if (isImporting) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.size(10.dp))
+            }
+            Text(stringResource(R.string.choose_gpx))
+        }
     }
 }
 
 @Composable
-private fun ActiveRouteState(
+private fun RouteDetailsContent(
     route: GpxRoute,
-    isImporting: Boolean,
-    onOpenDocument: () -> Unit,
+    details: RouteDetails?,
+    isLoading: Boolean,
+    loadingFailed: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = Modifier.widthIn(max = 560.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        if (maxWidth >= 760.dp) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    item { RouteHeader(route) }
+                    details?.let {
+                        item { RouteStatistics(it) }
+                        item { ElevationProfileCard(it) }
+                    }
+                    if (isLoading) item { LoadingDetailsCard() }
+                    if (loadingFailed) item { DetailsErrorCard() }
+                }
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                ) {
+                    details?.let { item { RoutePositionsCard(it.positions) } }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item { RouteHeader(route, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                if (isLoading) {
+                    item { LoadingDetailsCard(Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                }
+                if (loadingFailed) {
+                    item { DetailsErrorCard(Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                }
+                details?.let {
+                    item { RouteStatistics(it, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                    item { ElevationProfileCard(it, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                    item { RoutePositionsCard(it.positions, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RouteHeader(route: GpxRoute, modifier: Modifier = Modifier) {
+    val title = remember(route.displayName) { route.displayName.toFriendlyRouteTitle() }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
-        Text(
-            text = stringResource(R.string.active_route),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(12.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = route.displayName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = stringResource(R.string.active_route),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = route.displayName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.stored_locally),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RouteStatistics(details: RouteDetails, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(R.string.route_summary),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Statistic(
+                    label = stringResource(R.string.distance),
+                    value = stringResource(R.string.distance_km, details.totalDistanceMeters / 1_000.0),
+                    modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.stored_locally),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
+                Statistic(
+                    label = stringResource(R.string.track_points),
+                    value = stringResource(R.string.track_points_value, details.trackPointCount),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Statistic(
+                    label = stringResource(R.string.lowest_point),
+                    value = details.minimumElevationMeters.elevationText(),
+                    modifier = Modifier.weight(1f),
+                )
+                Statistic(
+                    label = stringResource(R.string.highest_point),
+                    value = details.maximumElevationMeters.elevationText(),
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
-        Spacer(Modifier.height(24.dp))
-        ImportButton(isImporting, onOpenDocument, R.string.choose_another_gpx)
     }
 }
 
 @Composable
-private fun ImportButton(
+private fun Statistic(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ElevationProfileCard(details: RouteDetails, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(R.string.elevation_profile),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(16.dp))
+            if (details.elevationProfile.size < 2) {
+                Text(
+                    text = stringResource(R.string.no_elevation_data),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                ElevationChart(
+                    samples = details.elevationProfile,
+                    totalDistanceMeters = details.totalDistanceMeters,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ElevationChart(
+    samples: List<ElevationSample>,
+    totalDistanceMeters: Double,
+) {
+    val minimum = samples.minOf(ElevationSample::elevationMeters)
+    val maximum = samples.maxOf(ElevationSample::elevationMeters)
+    val elevationRange = (maximum - minimum).coerceAtLeast(1.0)
+    val distanceRange = totalDistanceMeters.coerceAtLeast(1.0)
+    val lineColor = MaterialTheme.colorScheme.primary
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val chartDescription = stringResource(
+        R.string.elevation_chart_description,
+        minimum,
+        maximum,
+        totalDistanceMeters / 1_000.0,
+    )
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .semantics { contentDescription = chartDescription },
+    ) {
+        repeat(4) { index ->
+            val y = size.height * index / 3f
+            drawLine(
+                color = gridColor,
+                start = androidx.compose.ui.geometry.Offset(0f, y),
+                end = androidx.compose.ui.geometry.Offset(size.width, y),
+                strokeWidth = 1.dp.toPx(),
+            )
+        }
+        val path = Path()
+        samples.forEachIndexed { index, sample ->
+            val x = (sample.distanceMeters / distanceRange * size.width).toFloat()
+            val y = (size.height - (sample.elevationMeters - minimum) / elevationRange * size.height).toFloat()
+            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(
+            path = path,
+            color = lineColor,
+            style = Stroke(
+                width = 3.dp.toPx(),
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round,
+            ),
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(
+            text = stringResource(R.string.distance_km, 0.0),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.distance_km, totalDistanceMeters / 1_000.0),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun RoutePositionsCard(
+    positions: List<RoutePosition>,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(R.string.route_course),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.route_course_explanation),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            positions.forEachIndexed { index, position ->
+                RoutePositionRow(index + 1, position)
+                if (index < positions.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.maneuvers_from_google_maps),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoutePositionRow(index: Int, position: RoutePosition) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = index.toString(),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = when (position.kind) {
+                    RoutePositionKind.START -> stringResource(R.string.route_start)
+                    RoutePositionKind.MANEUVER -> stringResource(R.string.route_maneuver)
+                    RoutePositionKind.STOP -> stringResource(R.string.route_stop)
+                    RoutePositionKind.DESTINATION -> stringResource(R.string.route_destination)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(
+                    R.string.coordinates_value,
+                    position.latitude,
+                    position.longitude,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (position.distanceMeters > 0.0) {
+                Text(
+                    text = stringResource(
+                        R.string.distance_from_start,
+                        position.distanceMeters / 1_000.0,
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Icon(
+            imageVector = Icons.Default.Place,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun LoadingDetailsCard(modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            Text(stringResource(R.string.loading_route_details))
+        }
+    }
+}
+
+@Composable
+private fun DetailsErrorCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+    ) {
+        Text(
+            text = stringResource(R.string.route_details_failed),
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(24.dp),
+        )
+    }
+}
+
+@Composable
+private fun RouteActionBar(
     isImporting: Boolean,
+    isPreparingRoute: Boolean,
+    canOpenInMaps: Boolean,
+    onOpenDocument: () -> Unit,
+    onOpenInMaps: () -> Unit,
+) {
+    Surface(shadowElevation = 8.dp, tonalElevation = 2.dp) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp),
+        ) {
+            if (maxWidth >= 620.dp) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    ChooseFileButton(
+                        isImporting = isImporting,
+                        enabled = !isImporting && !isPreparingRoute,
+                        onClick = onOpenDocument,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OpenMapsButton(
+                        isPreparingRoute = isPreparingRoute,
+                        enabled = canOpenInMaps && !isImporting && !isPreparingRoute,
+                        onClick = onOpenInMaps,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ChooseFileButton(
+                        isImporting = isImporting,
+                        enabled = !isImporting && !isPreparingRoute,
+                        onClick = onOpenDocument,
+                    )
+                    OpenMapsButton(
+                        isPreparingRoute = isPreparingRoute,
+                        enabled = canOpenInMaps && !isImporting && !isPreparingRoute,
+                        onClick = onOpenInMaps,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChooseFileButton(
+    isImporting: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
-    labelResource: Int,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        if (isImporting) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+        }
+        Spacer(Modifier.size(10.dp))
+        Text(stringResource(R.string.choose_another_gpx))
+    }
+}
+
+@Composable
+private fun OpenMapsButton(
+    isPreparingRoute: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
-        enabled = !isImporting,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth(),
     ) {
-        if (isImporting) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-            )
-            Spacer(Modifier.size(10.dp))
+        if (isPreparingRoute) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(imageVector = Icons.Default.Place, contentDescription = null)
         }
-        Text(stringResource(labelResource))
+        Spacer(Modifier.size(10.dp))
+        Text(stringResource(R.string.open_in_google_maps))
     }
+}
+
+@Composable
+private fun Double?.elevationText(): String =
+    this?.let { stringResource(R.string.elevation_meters, it) }
+        ?: stringResource(R.string.not_available)
+
+private fun String.toFriendlyRouteTitle(): String {
+    val withoutExtension = if (endsWith(".gpx", ignoreCase = true)) dropLast(4) else this
+    return withoutExtension
+        .replace(FileNameSeparators, " ")
+        .replace(RepeatedWhitespace, " ")
+        .trim()
+        .ifEmpty { this }
 }

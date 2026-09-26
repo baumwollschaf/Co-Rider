@@ -94,6 +94,9 @@ private class FakeGpxFileStore : GpxFileStore {
         return fileName
     }
 
+    override suspend fun open(internalFileName: String): InputStream =
+        ByteArrayInputStream(checkNotNull(storedFiles[internalFileName]))
+
     override suspend fun delete(internalFileName: String) {
         deletedFiles += internalFileName
         storedFiles.remove(internalFileName)

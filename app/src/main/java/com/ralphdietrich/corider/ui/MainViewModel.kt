@@ -8,12 +8,20 @@ import androidx.lifecycle.viewModelScope
 import com.ralphdietrich.corider.data.ContentResolverGpxImportSource
 import com.ralphdietrich.corider.domain.RouteRepository
 import com.ralphdietrich.corider.domain.model.GpxRoute
+import com.ralphdietrich.corider.domain.model.RouteDetails
 import com.ralphdietrich.corider.domain.model.ThemeMode
+import java.util.concurrent.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -23,26 +31,49 @@ data class MainUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isImporting: Boolean = false,
     val importFailed: Boolean = false,
+    val isPreparingRoute: Boolean = false,
+    val mapsRouteFailed: Boolean = false,
+    val routeDetails: RouteDetails? = null,
+    val isLoadingRouteDetails: Boolean = false,
+    val routeDetailsFailed: Boolean = false,
+)
+
+private data class MainOperationState(
+    val isImporting: Boolean = false,
+    val importFailed: Boolean = false,
+    val isPreparingRoute: Boolean = false,
+    val mapsRouteFailed: Boolean = false,
+    val detailsRouteId: String? = null,
+    val routeDetails: RouteDetails? = null,
+    val isLoadingRouteDetails: Boolean = false,
+    val routeDetailsFailed: Boolean = false,
 )
 
 class MainViewModel(
     private val repository: RouteRepository,
     private val contentResolver: ContentResolver,
 ) : ViewModel() {
-    private val isImporting = MutableStateFlow(false)
-    private val importFailed = MutableStateFlow(false)
+    private val operationState = MutableStateFlow(MainOperationState())
+    private val mapsUrlChannel = Channel<String>(Channel.BUFFERED)
+
+    val mapsUrlEvents = mapsUrlChannel.receiveAsFlow()
 
     val uiState = combine(
         repository.library,
-        isImporting,
-        importFailed,
-    ) { library, importing, failed ->
+        operationState,
+    ) { library, operation ->
+        val detailsMatchActiveRoute = operation.detailsRouteId == library.activeRouteId
         MainUiState(
             routes = library.routes,
             activeRoute = library.activeRoute,
             themeMode = library.themeMode,
-            isImporting = importing,
-            importFailed = failed,
+            isImporting = operation.isImporting,
+            importFailed = operation.importFailed,
+            isPreparingRoute = operation.isPreparingRoute,
+            mapsRouteFailed = operation.mapsRouteFailed,
+            routeDetails = operation.routeDetails.takeIf { detailsMatchActiveRoute },
+            isLoadingRouteDetails = operation.isLoadingRouteDetails && detailsMatchActiveRoute,
+            routeDetailsFailed = operation.routeDetailsFailed && detailsMatchActiveRoute,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -50,18 +81,26 @@ class MainViewModel(
         initialValue = MainUiState(),
     )
 
+    init {
+        viewModelScope.launch {
+            repository.library
+                .map { it.activeRouteId }
+                .distinctUntilChanged()
+                .collectLatest(::loadRouteDetails)
+        }
+    }
+
     fun importRoute(uri: Uri) {
         viewModelScope.launch {
-            isImporting.value = true
-            importFailed.value = false
+            operationState.update { it.copy(isImporting = true, importFailed = false) }
             runCatching {
                 withContext(Dispatchers.IO) {
                     repository.importRoute(ContentResolverGpxImportSource(contentResolver, uri))
                 }
             }.onFailure {
-                importFailed.value = true
+                operationState.update { it.copy(importFailed = true) }
             }
-            isImporting.value = false
+            operationState.update { it.copy(isImporting = false) }
         }
     }
 
@@ -73,8 +112,75 @@ class MainViewModel(
         viewModelScope.launch { repository.setThemeMode(mode) }
     }
 
+    fun openActiveRouteInMaps() {
+        val routeId = uiState.value.activeRoute?.id ?: return
+        if (operationState.value.isPreparingRoute) return
+        viewModelScope.launch {
+            operationState.update { it.copy(isPreparingRoute = true, mapsRouteFailed = false) }
+            runCatching {
+                withContext(Dispatchers.IO) { repository.createMapsRouteUrl(routeId) }
+            }.onSuccess { url ->
+                mapsUrlChannel.send(url)
+            }.onFailure {
+                operationState.update { it.copy(mapsRouteFailed = true) }
+            }
+            operationState.update { it.copy(isPreparingRoute = false) }
+        }
+    }
+
+    fun reportMapsLaunchFailure() {
+        operationState.update { it.copy(mapsRouteFailed = true) }
+    }
+
     fun dismissImportError() {
-        importFailed.value = false
+        operationState.update { it.copy(importFailed = false) }
+    }
+
+    fun dismissMapsRouteError() {
+        operationState.update { it.copy(mapsRouteFailed = false) }
+    }
+
+    private suspend fun loadRouteDetails(routeId: String?) {
+        if (routeId == null) {
+            operationState.update {
+                it.copy(
+                    detailsRouteId = null,
+                    routeDetails = null,
+                    isLoadingRouteDetails = false,
+                    routeDetailsFailed = false,
+                )
+            }
+            return
+        }
+
+        operationState.update {
+            it.copy(
+                detailsRouteId = routeId,
+                routeDetails = null,
+                isLoadingRouteDetails = true,
+                routeDetailsFailed = false,
+            )
+        }
+        try {
+            val details = withContext(Dispatchers.IO) { repository.loadRouteDetails(routeId) }
+            operationState.update { current ->
+                if (current.detailsRouteId == routeId) {
+                    current.copy(routeDetails = details, isLoadingRouteDetails = false)
+                } else {
+                    current
+                }
+            }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Throwable) {
+            operationState.update { current ->
+                if (current.detailsRouteId == routeId) {
+                    current.copy(isLoadingRouteDetails = false, routeDetailsFailed = true)
+                } else {
+                    current
+                }
+            }
+        }
     }
 
     companion object {

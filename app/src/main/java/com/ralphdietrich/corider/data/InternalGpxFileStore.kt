@@ -25,6 +25,14 @@ class InternalGpxFileStore(
             fileName
         }
 
+    override suspend fun open(internalFileName: String): InputStream =
+        withContext(Dispatchers.IO) {
+            require('/' !in internalFileName && '\\' !in internalFileName) {
+                "Invalid internal GPX file name"
+            }
+            File(File(context.filesDir, GPX_DIRECTORY), internalFileName).inputStream()
+        }
+
     override suspend fun delete(internalFileName: String) {
         withContext(Dispatchers.IO) {
             File(File(context.filesDir, GPX_DIRECTORY), internalFileName).delete()
