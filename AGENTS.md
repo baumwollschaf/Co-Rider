@@ -54,10 +54,12 @@ Diese Regeln gelten für das gesamte Repository und für alle zukünftigen Arbei
 
 - Verwende eine moderne Material-3-Oberfläche.
 - Die App soll modern, hochwertig, klar und bewusst reduziert wirken, nicht wie ein technisches Demo-Utility.
+- Alle nutzersichtbaren UI-Texte, Meldungen, Fehlertexte und Accessibility-Beschreibungen sind grundsätzlich auf Englisch. Lege sie als Android-String-Ressourcen ab und vermeide fest codierte Texte im Kotlin-Code.
 - Ein Navigation Drawer mit Hamburger-Menü dient für GPX-Import, Historie und sinnvolle Einstellungen.
-- Das Theme unterstützt `System`, `Hell` und `Dunkel`.
+- Das Theme unterstützt `System`, `Light` und `Dark`.
 - Theme-Default ist `System`; die Auswahl wird persistent gespeichert.
-- Die vorgesehene Richtung für ein späteres App-Icon ist eine moderne Verbindung aus Motorrad beziehungsweise Helm und Navigation. Erzeuge kein finales Icon, solange es nicht ausdrücklich beauftragt wird.
+- Verwende wenige, funktionale Icons. Nutze etablierte Material Icons für Standardaktionen und eigene Icons nur für marken- oder routenspezifische Funktionen. Nicht allgemein verständliche Hauptaktionen erhalten Icon und englische Textbeschriftung.
+- Das App-Icon selbst enthält keinen Text. Die vorgesehene Richtung ist eine moderne, reduzierte Motorrad-Front mit erkennbarem Vorderrad, angedeuteter Frontpartie beziehungsweise Gabel und etwas Lenker, verbunden mit einer Navigationslinie, einem Pfeil oder Zielpunkt. Es muss als Adaptive Icon, monochromes Themed Icon sowie klein und groß funktionieren. Erzeuge kein finales Icon, solange es nicht ausdrücklich beauftragt wird.
 
 ## Qualität und Release
 

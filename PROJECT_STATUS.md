@@ -42,6 +42,7 @@ Der aktuelle Stand baut erfolgreich, ist aber noch nicht releasefähig: Release-
 - Fachliche Modelle für GPX-Dokumente, Tracks und Punkte sind vorhanden.
 - `GpxParser` und `MapsRouteUrlFactory` sind als Erweiterungspunkte vorhanden, besitzen aber noch keine Implementierungen.
 - Die spätere Routenaufbereitung soll als testbare, austauschbare Fachlogik ohne Abhängigkeit von Compose oder Android implementiert werden. Für die Übergabe an Google Maps sind einfache URLs beziehungsweise native Android-Intents ohne API-Key oder Cloud-Infrastruktur vorgesehen.
+- Englisch ist als alleinige Sprache für nutzersichtbare UI-Texte, Meldungen und Accessibility-Beschreibungen festgelegt. Texte bleiben in Android-String-Ressourcen, damit eine spätere Lokalisierung möglich bleibt.
 - Backup ist vollständig deaktiviert beziehungsweise explizit ausgeschlossen, damit importierte GPX-Daten lokal bleiben.
 
 ## Build-Konfiguration
@@ -88,7 +89,7 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 - Release-Signing, Upload-Key/Keystore, Play App Signing und ein signiertes `.aab` sind nicht konfiguriert.
 - Release-Optimierung und konkrete R8-/Keep-Regeln sind noch nicht für einen Produktionsrelease geprüft.
 - Es wurden noch keine manuellen Tests auf API 24, aktuellen Android-Versionen oder mit realen GPX-Dateien dokumentiert.
-- Die UI-Texte liegen derzeit nur in der Standard-Resource-Datei auf Deutsch vor.
+- Die vorhandenen UI-Texte sind derzeit noch Deutsch und entsprechen damit noch nicht der neuen Produktentscheidung für eine vollständig englische Oberfläche.
 
 ## Offene Aufgaben
 
@@ -100,8 +101,9 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 6. Verhalten für fehlendes Google Maps, sehr große Tracks, mehrere Segmente und unterbrochene GPX-Dateien definieren.
 7. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
 8. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
-9. App-Icon, Store-Texte, Datenschutzangaben und weitere Release-Metadaten finalisieren. Die vorgesehene Icon-Richtung verbindet Motorrad beziehungsweise Helm mit Navigation; ein finales Icon ist noch nicht beauftragt.
-10. Release-Build optimieren, Signing sicher konfigurieren und ein signiertes Android App Bundle erzeugen.
+9. Bestehende deutsche UI- und Fehlermeldungen vollständig auf Englisch umstellen und Accessibility-Texte prüfen.
+10. App-Icon, Store-Texte, Datenschutzangaben und weitere Release-Metadaten finalisieren. Die vorgesehene Icon-Richtung ist eine reduzierte Motorrad-Front mit Vorderrad, Frontpartie/Gabel und angedeutetem Lenker, verbunden mit Navigation. Das textfreie Adaptive Icon muss auch monochrom sowie klein funktionieren; ein finales Icon ist noch nicht beauftragt.
+11. Release-Build optimieren, Signing sicher konfigurieren und ein signiertes Android App Bundle erzeugen.
 
 ## Sinnvollster nächster Entwicklungsschritt
 
