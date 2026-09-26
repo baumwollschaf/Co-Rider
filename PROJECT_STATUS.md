@@ -8,6 +8,8 @@ Der lokale GPX-Import, eine responsive Routendetailseite und die erste vollstän
 
 Der Produktscope ist derzeit ausschließlich Android; eine iOS-Version ist nicht geplant.
 
+Der bewusst kleine Produktkern bleibt ein kostenloser, werbefreier und quelloffener GPX-Durchreicher. Eine Pro-Version, Abonnements oder In-App-Käufe sind nicht vorgesehen. Eine unbegrenzte Routenbibliothek und Kategorien wie Motorrad, Auto oder Caravan werden vorerst nicht entwickelt, weil sie Co-Rider von diesem Kern in Richtung einer umfangreichen Routenverwaltung verschieben würden. Einzelne Historieneinträge löschen zu können, bleibt dagegen eine sinnvolle spätere Ergänzung; bevorzugt mit einer kurzzeitig angebotenen `Undo`-Aktion statt eines bestätigenden Yes/No-Dialogs.
+
 Der aktuelle Stand baut erfolgreich, ist aber noch nicht releasefähig: Release-Signing, ein signiertes App Bundle sowie weitere Robustheits- und Gerätetests fehlen.
 
 ## Aktueller Funktionsstand
@@ -55,6 +57,7 @@ Der aktuelle Stand baut erfolgreich, ist aber noch nicht releasefähig: Release-
 - `MainActivity` öffnet die URL per Android-Intent bevorzugt im Google-Maps-Paket und fällt bei fehlender App auf einen allgemeinen URL-Handler zurück.
 - Englisch ist als alleinige Sprache für nutzersichtbare UI-Texte, Meldungen und Accessibility-Beschreibungen festgelegt. Texte bleiben in Android-String-Ressourcen, damit eine spätere Lokalisierung möglich bleibt.
 - Backup ist vollständig deaktiviert beziehungsweise explizit ausgeschlossen, damit importierte GPX-Daten lokal bleiben.
+- Der Produktscope bleibt bewusst klein: keine Pro-Ausgabe, keine Bezahlschranken und vorerst weder unbegrenzte Bibliothek noch Routenkategorien. Solche Verwaltungsfunktionen werden nur bei einem später nachgewiesenen praktischen Bedarf neu bewertet.
 
 ## Build-Konfiguration
 
@@ -119,13 +122,14 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 6. Mehrziel-Navigation, automatische Fortsetzung und Honda-RoadSync-Ausgabe praktisch prüfen.
 7. Ein einfaches Modell und eine UI zum bewussten Markieren persistenter Stops entwickeln; nicht klassifizierte GPX-POIs dürfen dabei nicht automatisch übernommen werden.
 8. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
-9. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
-10. App-Icon, Store-Texte, Datenschutzangaben und weitere Release-Metadaten finalisieren. Die vorgesehene Icon-Richtung ist eine reduzierte Motorrad-Front mit Vorderrad, Frontpartie/Gabel und angedeutetem Lenker, verbunden mit Navigation. Das textfreie Adaptive Icon muss auch monochrom sowie klein funktionieren; ein finales Icon ist noch nicht beauftragt.
-11. Release-Build optimieren, Signing sicher konfigurieren und ein signiertes Android App Bundle erzeugen.
+9. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
+10. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
+11. App-Icon, Store-Texte, Datenschutzangaben und weitere Release-Metadaten finalisieren. Die vorgesehene Icon-Richtung ist eine reduzierte Motorrad-Front mit Vorderrad, Frontpartie/Gabel und angedeutetem Lenker, verbunden mit Navigation. Das textfreie Adaptive Icon muss auch monochrom sowie klein funktionieren; ein finales Icon ist noch nicht beauftragt.
+12. Release-Build optimieren, Signing sicher konfigurieren und ein signiertes Android App Bundle erzeugen.
 
 ## Sinnvollster nächster Entwicklungsschritt
 
-Als Nächstes sollte die neue Detailseite mit der bereitgestellten Berlin-Hamburg-Tour im Emulator sowohl hochkant als auch quer geprüft und anschließend `Open in Google Maps` ausgeführt werden. Entscheidend sind die Lesbarkeit des Höhenprofils, dauerhaft erreichbare Aktionen und der visuelle Vergleich der Google-Maps-Strecke mit der ursprünglichen Motorradtour. Danach sollte die GPX-Validierung in den Importzeitpunkt vorgezogen werden.
+Der Funktionskern ist weit genug, um jetzt in die praktische Testphase zu gehen. Als Nächstes sollte die neue Detailseite mit der bereitgestellten Berlin-Hamburg-Tour im Emulator sowohl hochkant als auch quer geprüft und anschließend `Open in Google Maps` ausgeführt werden. Entscheidend sind die Lesbarkeit des Höhenprofils, dauerhaft erreichbare Aktionen und der visuelle Vergleich der Google-Maps-Strecke mit der ursprünglichen Motorradtour. Danach sollte die GPX-Validierung in den Importzeitpunkt vorgezogen werden.
 
 ## Notwendige manuelle Entwickleraktionen
 
@@ -142,6 +146,6 @@ Als Nächstes sollte die neue Detailseite mit der bereitgestellten Berlin-Hambur
 
 ## Repository-Zustand bei dieser Aktualisierung
 
-- Die oben beschriebene Routendetailseite und Google-Maps-Übergabe liegen aktuell als noch nicht committete Änderungen im Arbeitsbaum vor und werden nach der Abschlussprüfung zum Git-Index hinzugefügt.
+- Die oben beschriebene Routendetailseite und Google-Maps-Übergabe liegen aktuell als noch nicht committete, bereits geprüfte und zum Git-Index hinzugefügte Änderungen vor.
 - Die externe Motorrad-Online-Beispieldatei wurde ausschließlich gelesen und nicht in das Repository kopiert.
 - Es wurde kein Commit und kein Push ausgeführt.
