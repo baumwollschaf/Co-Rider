@@ -10,7 +10,7 @@ Der Produktscope ist derzeit ausschließlich Android; eine iOS-Version ist nicht
 
 Der bewusst kleine Produktkern bleibt ein kostenloser, werbefreier und quelloffener GPX-Durchreicher. Eine Pro-Version, Abonnements oder In-App-Käufe sind nicht vorgesehen. Eine unbegrenzte Routenbibliothek und Kategorien wie Motorrad, Auto oder Caravan werden vorerst nicht entwickelt, weil sie Co-Rider von diesem Kern in Richtung einer umfangreichen Routenverwaltung verschieben würden. Einzelne Historieneinträge löschen zu können, bleibt dagegen eine sinnvolle spätere Ergänzung; bevorzugt mit einer kurzzeitig angebotenen `Undo`-Aktion statt eines bestätigenden Yes/No-Dialogs.
 
-Der aktuelle Stand baut erfolgreich, ist aber noch nicht releasefähig: Release-Signing, ein signiertes App Bundle sowie weitere Robustheits- und Gerätetests fehlen.
+Der aktuelle Stand baut erfolgreich und die Release-Signierung ist eingerichtet. Ein privater Upload-Keystore wurde außerhalb des Repositories erzeugt und das erste signierte Android App Bundle wurde erfolgreich gebaut, geprüft und von der Play Console in einem Produktionsrelease-Entwurf angenommen. Die Richtlinienangaben werden dort aktuell vervollständigt. Vor der Veröffentlichung fehlen insbesondere die öffentliche Datenschutzseite, der aktualisierte Bundle-Upload, die Store-Darstellung sowie weitere Robustheits- und Gerätetests.
 
 ## Verbindlicher V1-Scope
 
@@ -32,6 +32,7 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
   - `Open GPX file`
   - Historie `Recently used`
   - Theme-Auswahl `System`, `Light`, `Dark`
+  - `Privacy policy`, das die öffentliche Datenschutzseite im Browser öffnet
 - Empty State mit prominentem GPX-Auswahlbutton.
 - Import und Auswahl eines Historieneintrags führen auf dieselbe Routendetailseite.
 - Die Detailseite zeigt einen lesbar aufbereiteten Tournamen, den unveränderten Dateinamen, Original-GPX-Distanz, niedrigsten und höchsten Höhenpunkt, ein geglättetes Original-GPX-Höhenprofil sowie eine verständliche Qualitätsaussage zur geometrischen Repräsentation.
@@ -78,6 +79,8 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
 - `MainActivity` öffnet die URL per Android-Intent bevorzugt im Google-Maps-Paket und fällt bei fehlender App auf einen allgemeinen URL-Handler zurück.
 - Englisch ist als alleinige Sprache für nutzersichtbare UI-Texte, Meldungen und Accessibility-Beschreibungen festgelegt. Texte bleiben in Android-String-Ressourcen, damit eine spätere Lokalisierung möglich bleibt.
 - Backup ist vollständig deaktiviert beziehungsweise explizit ausgeschlossen, damit importierte GPX-Daten lokal bleiben.
+- Die vorbereitete öffentliche Datenschutzseite beschreibt lokale GPX-Verarbeitung, Aufbewahrung und Löschung sowie die ausschließlich nutzerinitiierte Übergabe ausgewählter Routenkoordinaten an Google Maps. Sie kommt ohne Cookies, Analytics, externe Schriften oder Skripte aus und wird separat unter `https://baumwollschaf.github.io/co-rider-legal/` veröffentlicht.
+- Der Ordner `Pics` enthält fertig benannte Play-Store-Assets: App-Symbol in 512×512 Pixeln, eine kinoreife Vorstellungsgrafik in 1024×500 Pixeln mit dem Claim „The missing link between GPX and your ride.“ und vier echte Smartphone-Screenshots im 9:16-Format. Tablet-, Desktop- und XR-Assets werden für die telefonzentrierte V1 bewusst nicht bereitgestellt, da sie in der Play Console optional sind.
 - Der Produktscope bleibt bewusst klein: keine Pro-Ausgabe, keine Bezahlschranken und vorerst weder unbegrenzte Bibliothek noch Routenkategorien. Solche Verwaltungsfunktionen werden nur bei einem später nachgewiesenen praktischen Bedarf neu bewertet.
 
 ## Build-Konfiguration
@@ -86,13 +89,13 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
 - Minimum SDK: 24
 - Compile SDK: 37
 - Target SDK: 37
-- Version: `1.0` (`versionCode` 1)
+- Version: `1.0` (`versionCode` 2; der bereits hochgeladene erste Entwurf verwendete Code 1)
 - Kotlin: 2.2.10
 - Android Gradle Plugin: 9.4.1
 - Compose BOM: 2026.02.01
 - DataStore: 1.2.1
 - Java-Quell- und Zielkompatibilität: 11
-- Der Release-Build ist derzeit nicht signiert; Release-Optimierung ist noch deaktiviert.
+- Der Release-Build liest eine optionale, von Git ausgeschlossene `keystore.properties` und wird automatisch signiert, sobald der lokale Upload-Keystore konfiguriert ist. Ohne diese lokale Datei bleibt der Release-Build unsigniert. Release-Optimierung ist für den ersten Test-Build bewusst noch deaktiviert.
 
 ## Tests und letzter Prüfstand
 
@@ -112,8 +115,11 @@ Letzte vollständige Prüfung am 27. September 2026:
 
 - `gradlew build`: erfolgreich.
 - Debug- und unsigniertes Release-APK: erfolgreich erzeugt.
+- Erstes mit dem privaten Upload-Key signiertes Release-Bundle: erfolgreich erzeugt; Signaturintegrität und wesentliche Bundle-Einträge wurden lokal geprüft. Das generierte `.aab` bleibt als Build-Artefakt von Git ausgeschlossen.
 - 16 Unit Tests: erfolgreich, keine Fehler oder übersprungenen Tests.
 - Android Lint: 0 Fehler; 8 reine Hinweise auf neuere stabile Bibliotheksversionen.
+- Der ergänzte Datenschutz-Menüpunkt wurde für Debug und Release erfolgreich kompiliert; 16 Unit Tests, Debug-Lint und ein Release-Bundle-Lauf waren danach erfolgreich.
+- Das aktuelle Debug-APK wurde zusätzlich erfolgreich gebaut, im Pixel-10a-Emulator installiert und für die finalen Store-Screenshots mit der Berlin-Hamburg-Testdatei geprüft.
 - Drei bereitgestellte Motorrad-Online-Varianten wurden zusätzlich lokal geprüft: 4.612, 4.996 und 5.149 Trackpunkte wurden korrekt gelesen und jeweils auf neun strategische Zwischenpunkte reduziert. Die unterschiedlichen Streckenverläufe erzeugen unterschiedliche Stützpunkte; alle drei langen Touren werden wegen der verbleibenden maximalen Abweichung ehrlich als `limited` eingestuft. Die Beispieldateien wurden nicht in das Projekt kopiert.
 
 Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifische Compose-UI- oder End-to-End-Tests existieren noch nicht.
@@ -132,7 +138,7 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 - Nutzerdefinierte Stops besitzen noch keine Eingabe- oder Persistenzoberfläche. Eine spätere lokale Begleitdatei kann solche Co-Rider-Metadaten aufnehmen, ohne die importierte GPX-Datei zu verändern.
 - Ein Fehler beim nachträglichen Löschen einer verdrängten Datei wird aktuell toleriert; dadurch könnte im Ausnahmefall eine nicht mehr referenzierte Datei im internen Speicher verbleiben.
 - Es gibt noch keine Wartungsroutine, die fehlende oder verwaiste interne Dateien mit den DataStore-Metadaten abgleicht.
-- Release-Signing, Upload-Key/Keystore, Play App Signing und ein signiertes `.aab` sind nicht konfiguriert.
+- Das erste signierte `.aab` mit `versionCode` 1 wurde von der Play Console im Produktionsrelease-Entwurf angenommen. Wegen des anschließend ergänzten verpflichtenden In-App-Datenschutzlinks muss es vor der Freigabe durch ein neu signiertes Bundle mit `versionCode` 2 ersetzt werden.
 - Release-Optimierung und konkrete R8-/Keep-Regeln sind noch nicht für einen Produktionsrelease geprüft.
 - Es wurden noch keine manuellen Tests auf API 24 oder mit Honda RoadSync dokumentiert. Der aktuelle Emulator-Test verwendet API 37.2.
 
@@ -146,8 +152,8 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 6. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
 7. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
 8. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
-9. Store-Texte, Screenshots, Datenschutzangaben und weitere Release-Metadaten finalisieren. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
-10. Release-Build optimieren, Signing sicher konfigurieren und ein signiertes Android App Bundle erzeugen.
+9. Die fertigen Dateien aus `Pics` in den Store-Eintrag hochladen und die verbleibenden Release-Metadaten finalisieren. Datenschutzseite, GitHub Pages, In-App-Link, Store-Texte und die erforderlichen Store-Grafiken sind vorbereitet. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
+10. Ein neues signiertes Android App Bundle mit `versionCode` 2 erzeugen, den Bundle-Entwurf mit Code 1 ersetzen und die Release-Optimierung vor der Produktionsfreigabe erneut bewerten.
 
 ## Sinnvollster nächster Entwicklungsschritt
 
@@ -163,9 +169,11 @@ Der V1-Funktionskern ist weit genug für den entscheidenden Praxistest. Als Näc
 - Prüfen, wie Google Maps die Navigation an den erzeugten Zwischenzielen fortsetzt und ob die Ausgabe über Honda RoadSync ohne Bedienung des Smartphones funktioniert.
 - Mit weiteren Testdateien bestätigen, dass frühe und späte große Schlenker beziehungsweise Schleifen durch die budgetgesteuerte Auswahl berücksichtigt werden und die Qualitätswarnung bei unvertretbar großen lokalen Fehlern greift.
 - Import, App-Neustart, Theme-Wiederherstellung, Auswahl historischer Routen und Verdrängung des elften Eintrags auf einem Gerät verifizieren.
-- Vor einem Release einen Upload-Key/Keystore außerhalb des Repositories sicher erstellen und aufbewahren.
+- Den außerhalb des Repositories erstellten Upload-Key/Keystore zusammen mit dem Passwort verschlüsselt und redundant sichern.
 - Signing-Daten ausschließlich über lokale Gradle-Konfiguration oder sichere CI-Secrets bereitstellen.
-- Google Play App Signing einrichten und das signierte Release-`.aab` in einem internen Test-Track prüfen.
+- Das separate Repository `co-rider-legal` einchecken, GitHub Pages für `main` und den Root-Ordner aktivieren und anschließend `https://baumwollschaf.github.io/co-rider-legal/` kontrollieren.
+- Den In-App-Link `Privacy policy` im neu gebauten Release testen und diese öffentliche URL in der Play Console eintragen.
+- Ein signiertes Release-`.aab` mit `versionCode` 2 erzeugen, hochladen und den Play-ausgelieferten Build möglichst vor der Produktionsfreigabe auf einem realen Gerät prüfen.
 - Vor Veröffentlichung die dann aktuellen Target-SDK-, Data-Safety-, Datenschutz-, Store-Listing- und Richtlinienanforderungen in der Play Console kontrollieren.
 
 ## Repository-Zustand bei dieser Aktualisierung

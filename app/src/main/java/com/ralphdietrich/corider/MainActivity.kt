@@ -3,6 +3,7 @@ package com.ralphdietrich.corider
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     onRouteSelected = viewModel::activateRoute,
                     onThemeModeSelected = viewModel::setThemeMode,
                     onOpenInMaps = viewModel::openActiveRouteInMaps,
+                    onOpenPrivacyPolicy = ::openPrivacyPolicy,
                     onImportErrorShown = viewModel::dismissImportError,
                     onMapsRouteErrorShown = viewModel::dismissMapsRouteError,
                 )
@@ -67,7 +69,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun openPrivacyPolicy() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, PRIVACY_POLICY_URL.toUri()))
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.web_browser_unavailable, Toast.LENGTH_LONG).show()
+        }
+    }
+
     private companion object {
         const val GOOGLE_MAPS_PACKAGE = "com.google.android.apps.maps"
+        const val PRIVACY_POLICY_URL = "https://baumwollschaf.github.io/co-rider-legal/"
     }
 }

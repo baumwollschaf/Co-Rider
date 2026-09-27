@@ -1,6 +1,30 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val releaseSigningConfigured = keystorePropertiesFile.isFile
+
+if (releaseSigningConfigured) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+
+    val requiredProperties = listOf(
+        "storeFile",
+        "storePassword",
+        "keyAlias",
+        "keyPassword",
+    )
+    val missingProperties = requiredProperties.filter {
+        keystoreProperties.getProperty(it).isNullOrBlank()
+    }
+    check(missingProperties.isEmpty()) {
+        "Missing release signing properties in ${keystorePropertiesFile.name}: " +
+            missingProperties.joinToString()
+    }
 }
 
 android {
@@ -13,14 +37,29 @@ android {
         applicationId = "com.ralphdietrich.corider"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            isDebuggable = false
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                 enable = false
             }

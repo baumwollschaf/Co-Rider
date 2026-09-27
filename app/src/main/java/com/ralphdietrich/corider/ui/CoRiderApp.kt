@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
@@ -93,6 +94,7 @@ fun CoRiderApp(
     onRouteSelected: (String) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onOpenInMaps: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
     onImportErrorShown: () -> Unit,
     onMapsRouteErrorShown: () -> Unit,
 ) {
@@ -136,6 +138,10 @@ fun CoRiderApp(
                     coroutineScope.launch { drawerState.close() }
                 },
                 onThemeModeSelected = onThemeModeSelected,
+                onOpenPrivacyPolicy = {
+                    coroutineScope.launch { drawerState.close() }
+                    onOpenPrivacyPolicy()
+                },
             )
         },
     ) {
@@ -183,6 +189,7 @@ private fun AppDrawer(
     onOpenDocument: () -> Unit,
     onRouteSelected: (String) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
 ) {
     ModalDrawerSheet(modifier = Modifier.widthIn(max = 360.dp)) {
         LazyColumn(
@@ -240,6 +247,19 @@ private fun AppDrawer(
                         onClick = { onThemeModeSelected(mode) },
                     )
                 }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.privacy_policy)) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                        )
+                    },
+                    selected = false,
+                    onClick = onOpenPrivacyPolicy,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
             }
         }
     }
