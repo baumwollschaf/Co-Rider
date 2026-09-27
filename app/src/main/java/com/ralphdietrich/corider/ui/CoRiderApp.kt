@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -61,6 +59,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,8 +72,7 @@ import com.ralphdietrich.corider.R
 import com.ralphdietrich.corider.domain.model.ElevationSample
 import com.ralphdietrich.corider.domain.model.GpxRoute
 import com.ralphdietrich.corider.domain.model.RouteDetails
-import com.ralphdietrich.corider.domain.model.RoutePosition
-import com.ralphdietrich.corider.domain.model.RoutePositionKind
+import com.ralphdietrich.corider.domain.model.RouteRepresentationQuality
 import com.ralphdietrich.corider.domain.model.ThemeMode
 import kotlinx.coroutines.launch
 
@@ -310,20 +309,14 @@ private fun EmptyState(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.widthIn(max = 520.dp),
     ) {
-        Box(
+        Image(
+            painter = painterResource(R.drawable.co_rider_logo),
+            contentDescription = null,
             modifier = Modifier
-                .size(112.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "GPX",
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+                .size(128.dp)
+                .clip(RoundedCornerShape(28.dp)),
+            contentScale = ContentScale.Crop,
+        )
         Spacer(Modifier.height(28.dp))
         Text(
             text = stringResource(R.string.empty_title),
@@ -358,49 +351,41 @@ private fun RouteDetailsContent(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        if (maxWidth >= 760.dp) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    item { RouteHeader(route) }
-                    details?.let {
-                        item { RouteStatistics(it) }
-                        item { ElevationProfileCard(it) }
-                    }
-                    if (isLoading) item { LoadingDetailsCard() }
-                    if (loadingFailed) item { DetailsErrorCard() }
-                }
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                ) {
-                    details?.let { item { RoutePositionsCard(it.positions) } }
-                }
+        val wideLayout = maxWidth >= 760.dp
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(if (wideLayout) 24.dp else 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item { RouteHeader(route, Modifier.widthIn(max = 960.dp).fillMaxWidth()) }
+            if (isLoading) {
+                item { LoadingDetailsCard(Modifier.widthIn(max = 960.dp).fillMaxWidth()) }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item { RouteHeader(route, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
-                if (isLoading) {
-                    item { LoadingDetailsCard(Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+            if (loadingFailed) {
+                item { DetailsErrorCard(Modifier.widthIn(max = 960.dp).fillMaxWidth()) }
+            }
+            details?.let { routeDetails ->
+                item {
+                    RouteRepresentationCard(
+                        details = routeDetails,
+                        modifier = Modifier.widthIn(max = 960.dp).fillMaxWidth(),
+                    )
                 }
-                if (loadingFailed) {
-                    item { DetailsErrorCard(Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
-                }
-                details?.let {
-                    item { RouteStatistics(it, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
-                    item { ElevationProfileCard(it, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
-                    item { RoutePositionsCard(it.positions, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                if (wideLayout) {
+                    item {
+                        Row(
+                            modifier = Modifier.widthIn(max = 960.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            RouteStatistics(routeDetails, Modifier.weight(1f))
+                            ElevationProfileCard(routeDetails, Modifier.weight(1f))
+                        }
+                    }
+                } else {
+                    item { RouteStatistics(routeDetails, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
+                    item { ElevationProfileCard(routeDetails, Modifier.widthIn(max = 720.dp).fillMaxWidth()) }
                 }
             }
         }
@@ -453,21 +438,10 @@ private fun RouteStatistics(details: RouteDetails, modifier: Modifier = Modifier
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Statistic(
-                    label = stringResource(R.string.distance),
-                    value = stringResource(R.string.distance_km, details.totalDistanceMeters / 1_000.0),
-                    modifier = Modifier.weight(1f),
-                )
-                Statistic(
-                    label = stringResource(R.string.track_points),
-                    value = stringResource(R.string.track_points_value, details.trackPointCount),
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            Statistic(
+                label = stringResource(R.string.distance),
+                value = stringResource(R.string.distance_km, details.totalDistanceMeters / 1_000.0),
+            )
             Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -484,6 +458,52 @@ private fun RouteStatistics(details: RouteDetails, modifier: Modifier = Modifier
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RouteRepresentationCard(details: RouteDetails, modifier: Modifier = Modifier) {
+    val representation = details.representation
+    val (title, description) = when (representation.quality) {
+        RouteRepresentationQuality.GOOD ->
+            stringResource(R.string.representation_good) to
+                stringResource(R.string.representation_good_description)
+        RouteRepresentationQuality.LIMITED ->
+            stringResource(R.string.representation_limited) to
+                stringResource(R.string.representation_limited_description)
+        RouteRepresentationQuality.COMPLEX ->
+            stringResource(R.string.representation_complex) to
+                stringResource(R.string.representation_complex_description)
+    }
+    val containerColor = when (representation.quality) {
+        RouteRepresentationQuality.GOOD -> MaterialTheme.colorScheme.primaryContainer
+        RouteRepresentationQuality.LIMITED -> MaterialTheme.colorScheme.secondaryContainer
+        RouteRepresentationQuality.COMPLEX -> MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = when (representation.quality) {
+        RouteRepresentationQuality.GOOD -> MaterialTheme.colorScheme.onPrimaryContainer
+        RouteRepresentationQuality.LIMITED -> MaterialTheme.colorScheme.onSecondaryContainer
+        RouteRepresentationQuality.COMPLEX -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(text = description, style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.google_maps_final_route),
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }
@@ -509,9 +529,15 @@ private fun ElevationProfileCard(details: RouteDetails, modifier: Modifier = Mod
     Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = stringResource(R.string.elevation_profile),
+                text = stringResource(R.string.original_gpx_elevation),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.original_gpx_elevation_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
             if (details.elevationProfile.size < 2) {
@@ -589,100 +615,6 @@ private fun ElevationChart(
             text = stringResource(R.string.distance_km, totalDistanceMeters / 1_000.0),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun RoutePositionsCard(
-    positions: List<RoutePosition>,
-    modifier: Modifier = Modifier,
-) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp)) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = stringResource(R.string.route_course),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.route_course_explanation),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(16.dp))
-            positions.forEachIndexed { index, position ->
-                RoutePositionRow(index + 1, position)
-                if (index < positions.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.maneuvers_from_google_maps),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RoutePositionRow(index: Int, position: RoutePosition) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = index.toString(),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(Modifier.size(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = when (position.kind) {
-                    RoutePositionKind.START -> stringResource(R.string.route_start)
-                    RoutePositionKind.MANEUVER -> stringResource(R.string.route_maneuver)
-                    RoutePositionKind.STOP -> stringResource(R.string.route_stop)
-                    RoutePositionKind.DESTINATION -> stringResource(R.string.route_destination)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(
-                    R.string.coordinates_value,
-                    position.latitude,
-                    position.longitude,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (position.distanceMeters > 0.0) {
-                Text(
-                    text = stringResource(
-                        R.string.distance_from_start,
-                        position.distanceMeters / 1_000.0,
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Icon(
-            imageVector = Icons.Default.Place,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
         )
     }
 }

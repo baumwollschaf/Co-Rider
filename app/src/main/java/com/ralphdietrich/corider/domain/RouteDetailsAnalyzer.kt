@@ -4,13 +4,13 @@ import com.ralphdietrich.corider.domain.model.ElevationSample
 import com.ralphdietrich.corider.domain.model.GpxDocument
 import com.ralphdietrich.corider.domain.model.GpxPoint
 import com.ralphdietrich.corider.domain.model.RouteDetails
-import com.ralphdietrich.corider.domain.model.RoutePosition
-import com.ralphdietrich.corider.domain.model.RoutePositionKind
 import kotlin.math.ceil
 
 class RouteDetailsAnalyzer(
     private val maximumProfileSamples: Int = 320,
     private val smoothingRadius: Int = 2,
+    private val pointSelector: RoutePointSelector = ShapePreservingRoutePointSelector(),
+    private val maximumWaypoints: Int = GoogleMapsRouteConstraints.MAX_INTERMEDIATE_POINTS,
 ) {
     init {
         require(maximumProfileSamples >= 2)
@@ -26,8 +26,7 @@ class RouteDetailsAnalyzer(
             }
         }
         val smoothedProfile = smooth(rawElevationSamples)
-        val first = points.first()
-        val last = points.last()
+        val representation = pointSelector.select(document, maximumWaypoints).representation
 
         return RouteDetails(
             totalDistanceMeters = distances.last(),
@@ -35,20 +34,7 @@ class RouteDetailsAnalyzer(
             minimumElevationMeters = rawElevationSamples.minOfOrNull(ElevationSample::elevationMeters),
             maximumElevationMeters = rawElevationSamples.maxOfOrNull(ElevationSample::elevationMeters),
             elevationProfile = reduce(smoothedProfile),
-            positions = listOf(
-                RoutePosition(
-                    kind = RoutePositionKind.START,
-                    latitude = first.latitude,
-                    longitude = first.longitude,
-                    distanceMeters = 0.0,
-                ),
-                RoutePosition(
-                    kind = RoutePositionKind.DESTINATION,
-                    latitude = last.latitude,
-                    longitude = last.longitude,
-                    distanceMeters = distances.last(),
-                ),
-            ),
+            representation = representation,
         )
     }
 

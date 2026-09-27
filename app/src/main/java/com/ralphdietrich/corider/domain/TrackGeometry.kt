@@ -9,10 +9,13 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 object TrackGeometry {
-    fun primarySegment(document: GpxDocument): List<GpxPoint> = document.tracks
+    fun usableSegments(document: GpxDocument): List<List<GpxPoint>> = document.tracks
         .asSequence()
         .flatMap { it.segments.asSequence() }
         .filter { it.size >= 2 }
+        .toList()
+
+    fun primarySegment(document: GpxDocument): List<GpxPoint> = usableSegments(document)
         .maxByOrNull(::pathLengthMeters)
         ?: throw RouteConversionException("The GPX file contains no usable track")
 

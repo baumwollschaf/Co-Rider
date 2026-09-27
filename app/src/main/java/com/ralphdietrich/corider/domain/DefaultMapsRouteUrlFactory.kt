@@ -7,7 +7,7 @@ import java.util.Locale
 
 class DefaultMapsRouteUrlFactory(
     private val pointSelector: RoutePointSelector = ShapePreservingRoutePointSelector(),
-    private val maxWaypoints: Int = MAX_GOOGLE_MAPS_WAYPOINTS,
+    private val maxWaypoints: Int = GoogleMapsRouteConstraints.MAX_INTERMEDIATE_POINTS,
 ) : MapsRouteUrlFactory {
     override fun createUrl(document: GpxDocument): String {
         val route = pointSelector.select(document, maxWaypoints)
@@ -31,8 +31,4 @@ class DefaultMapsRouteUrlFactory(
 
     private fun GpxPoint.coordinate(): String =
         String.format(Locale.US, "%.6f,%.6f", latitude, longitude)
-
-    private companion object {
-        const val MAX_GOOGLE_MAPS_WAYPOINTS = 9
-    }
 }

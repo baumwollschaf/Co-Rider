@@ -6,7 +6,7 @@ data class RouteDetails(
     val minimumElevationMeters: Double?,
     val maximumElevationMeters: Double?,
     val elevationProfile: List<ElevationSample>,
-    val positions: List<RoutePosition>,
+    val representation: RouteRepresentation,
 )
 
 data class ElevationSample(
@@ -14,16 +14,16 @@ data class ElevationSample(
     val elevationMeters: Double,
 )
 
-data class RoutePosition(
-    val kind: RoutePositionKind,
-    val latitude: Double,
-    val longitude: Double,
-    val distanceMeters: Double,
+data class RouteRepresentation(
+    val quality: RouteRepresentationQuality,
+    val shapingPointCount: Int,
+    val maximumDeviationMeters: Double,
+    val maximumUnsupportedDistanceMeters: Double,
+    val ignoredSegmentCount: Int,
 )
 
-enum class RoutePositionKind {
-    START,
-    MANEUVER,
-    STOP,
-    DESTINATION,
+enum class RouteRepresentationQuality {
+    GOOD,
+    LIMITED,
+    COMPLEX,
 }

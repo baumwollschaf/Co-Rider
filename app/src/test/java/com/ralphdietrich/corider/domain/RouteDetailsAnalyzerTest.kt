@@ -3,7 +3,7 @@ package com.ralphdietrich.corider.domain
 import com.ralphdietrich.corider.domain.model.GpxDocument
 import com.ralphdietrich.corider.domain.model.GpxPoint
 import com.ralphdietrich.corider.domain.model.GpxTrack
-import com.ralphdietrich.corider.domain.model.RoutePositionKind
+import com.ralphdietrich.corider.domain.model.RouteRepresentationQuality
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -11,7 +11,7 @@ import org.junit.Test
 
 class RouteDetailsAnalyzerTest {
     @Test
-    fun `creates reliable summary profile and confirmed start and destination`() {
+    fun `creates reliable summary profile and representation quality`() {
         val points = listOf(
             point(52.0, 13.0, 20.0),
             point(52.1, 13.0, 30.0),
@@ -25,9 +25,8 @@ class RouteDetailsAnalyzerTest {
         assertEquals(10.0, details.minimumElevationMeters)
         assertEquals(30.0, details.maximumElevationMeters)
         assertEquals(3, details.elevationProfile.size)
-        assertEquals(RoutePositionKind.START, details.positions.first().kind)
-        assertEquals(RoutePositionKind.DESTINATION, details.positions.last().kind)
-        assertEquals(details.totalDistanceMeters, details.positions.last().distanceMeters, 0.001)
+        assertEquals(RouteRepresentationQuality.GOOD, details.representation.quality)
+        assertEquals(1, details.representation.shapingPointCount)
     }
 
     @Test
@@ -58,10 +57,9 @@ class RouteDetailsAnalyzerTest {
 
         val details = RouteDetailsAnalyzer().analyze(document)
 
-        assertEquals(2, details.positions.size)
-        assertTrue(details.positions.none { it.kind == RoutePositionKind.STOP })
         assertNull(details.minimumElevationMeters)
         assertTrue(details.elevationProfile.isEmpty())
+        assertEquals(0, details.representation.shapingPointCount)
     }
 
     private fun document(points: List<GpxPoint>) = GpxDocument(

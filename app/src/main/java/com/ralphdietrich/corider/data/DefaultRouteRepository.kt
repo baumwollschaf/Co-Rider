@@ -7,6 +7,7 @@ import com.ralphdietrich.corider.domain.RouteRepository
 import com.ralphdietrich.corider.domain.RouteDetailsAnalyzer
 import com.ralphdietrich.corider.domain.DefaultMapsRouteUrlFactory
 import com.ralphdietrich.corider.domain.SaxGpxParser
+import com.ralphdietrich.corider.domain.TrackGeometry
 import com.ralphdietrich.corider.domain.model.GpxRoute
 import com.ralphdietrich.corider.domain.model.RouteLibrary
 import com.ralphdietrich.corider.domain.model.RouteDetails
@@ -43,6 +44,10 @@ class DefaultRouteRepository(
         try {
             val internalFileName = fileStore.store(routeId, source.openStream())
             newInternalFile = internalFileName
+            val importedDocument = fileStore.open(internalFileName).use { input ->
+                gpxParser.parse(input)
+            }
+            TrackGeometry.primarySegment(importedDocument)
             val newRoute = GpxRoute(
                 id = routeId,
                 displayName = source.displayName.ifBlank { "Route.gpx" },

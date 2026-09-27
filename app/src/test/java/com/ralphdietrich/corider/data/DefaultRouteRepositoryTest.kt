@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class DefaultRouteRepositoryTest {
@@ -56,9 +57,41 @@ class DefaultRouteRepositoryTest {
         assertEquals(ThemeMode.DARK, restored.themeMode)
     }
 
-    private fun source(name: String) = object : GpxImportSource {
+    @Test
+    fun `invalid GPX is removed and never added to history`() = runBlocking {
+        val preferences = FakePreferencesStore()
+        val files = FakeGpxFileStore()
+        val repository = DefaultRouteRepository(
+            preferencesStore = preferences,
+            fileStore = files,
+            newId = { "invalid" },
+        )
+
+        try {
+            repository.importRoute(source("Broken.gpx", "<gpx/>"))
+            fail("Import should fail")
+        } catch (_: IllegalArgumentException) {
+            // Expected: the parser or route validation rejects the document.
+        }
+
+        assertTrue(repository.library.first().routes.isEmpty())
+        assertFalse(files.storedFiles.containsKey("invalid.gpx"))
+        assertTrue(files.deletedFiles.contains("invalid.gpx"))
+    }
+
+    private fun source(
+        name: String,
+        content: String = """
+            <gpx version="1.1" creator="test">
+              <trk><trkseg>
+                <trkpt lat="52.0" lon="13.0"/>
+                <trkpt lat="52.1" lon="13.1"/>
+              </trkseg></trk>
+            </gpx>
+        """.trimIndent(),
+    ) = object : GpxImportSource {
         override val displayName = name
-        override fun openStream(): InputStream = ByteArrayInputStream("<gpx/>".toByteArray())
+        override fun openStream(): InputStream = ByteArrayInputStream(content.toByteArray())
     }
 
     private fun route(id: String) = GpxRoute(

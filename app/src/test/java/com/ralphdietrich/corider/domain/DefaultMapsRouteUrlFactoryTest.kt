@@ -2,6 +2,8 @@ package com.ralphdietrich.corider.domain
 
 import com.ralphdietrich.corider.domain.model.GpxDocument
 import com.ralphdietrich.corider.domain.model.GpxPoint
+import com.ralphdietrich.corider.domain.model.RouteRepresentation
+import com.ralphdietrich.corider.domain.model.RouteRepresentationQuality
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -13,6 +15,13 @@ class DefaultMapsRouteUrlFactoryTest {
                 origin = GpxPoint(52.0, 13.0),
                 destination = GpxPoint(53.0, 10.0),
                 waypoints = listOf(GpxPoint(52.5, 12.0), GpxPoint(52.8, 11.0)),
+                representation = RouteRepresentation(
+                    quality = RouteRepresentationQuality.GOOD,
+                    shapingPointCount = 2,
+                    maximumDeviationMeters = 0.0,
+                    maximumUnsupportedDistanceMeters = 0.0,
+                    ignoredSegmentCount = 0,
+                ),
             )
         }
 
