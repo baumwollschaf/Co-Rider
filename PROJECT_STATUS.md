@@ -1,6 +1,6 @@
 # Co-Rider – Projektstatus
 
-Stand: 27. September 2026
+Stand: 28. September 2026
 
 ## Kurzstatus
 
@@ -145,15 +145,16 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 ## Offene Aufgaben
 
 1. Den neuen `Open in Google Maps`-Ablauf auf Emulator und realem Android-Gerät mit mehreren realen Touren manuell vergleichen.
-2. Konkretere, nutzerfreundliche Importfehler für ungültige oder routenlose GPX-Dateien abbilden.
-3. Rundtouren und mehrere Tracksegmente praktisch prüfen und zusätzliche Segmente verständlicher erklären.
-4. Qualitätsgrenzen der Fixed-Budget-RDP-Auswahl anhand weiterer kurzer, langer, kurviger und sich kreuzender Motorradtouren kalibrieren.
-5. Mehrziel-Navigation, automatische Fortsetzung und Honda-RoadSync-Ausgabe praktisch prüfen.
-6. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
-7. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
-8. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
-9. Die fertigen Dateien aus `Pics` in den Store-Eintrag hochladen und die verbleibenden Release-Metadaten finalisieren. Datenschutzseite, GitHub Pages, In-App-Link, Store-Texte und die erforderlichen Store-Grafiken sind vorbereitet. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
-10. Ein neues signiertes Android App Bundle mit `versionCode` 2 erzeugen, den Bundle-Entwurf mit Code 1 ersetzen und die Release-Optimierung vor der Produktionsfreigabe erneut bewerten.
+2. Doppelte GPX-Importe erkennen: Maßgeblich soll ein stabiler Fingerabdruck der geparsten, routenrelevanten GPX-Geometrie sein, nicht Dateiname, URI, interne UUID oder unwesentliche XML-Formatierung beziehungsweise Metadaten. Bei einem Treffer darf keine zweite interne Kopie und kein zweiter Historieneintrag entstehen; stattdessen wird der vorhandene Eintrag aktiviert und eine kurze englische Meldung mit dessen Anzeigenamen ausgegeben, beispielsweise `This route is already in your history as “%1$s”.` Die Umsetzung benötigt passende Repository- und ViewModel-Tests für identische Inhalte unter gleichen und unterschiedlichen Dateinamen.
+3. Konkretere, nutzerfreundliche Importfehler für ungültige oder routenlose GPX-Dateien abbilden.
+4. Rundtouren und mehrere Tracksegmente praktisch prüfen und zusätzliche Segmente verständlicher erklären.
+5. Qualitätsgrenzen der Fixed-Budget-RDP-Auswahl anhand weiterer kurzer, langer, kurviger und sich kreuzender Motorradtouren kalibrieren.
+6. Mehrziel-Navigation, automatische Fortsetzung und Honda-RoadSync-Ausgabe praktisch prüfen.
+7. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
+8. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
+9. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
+10. Die fertigen Dateien aus `Pics` in den Store-Eintrag hochladen und die verbleibenden Release-Metadaten finalisieren. Datenschutzseite, GitHub Pages, In-App-Link, Store-Texte und die erforderlichen Store-Grafiken sind vorbereitet. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
+11. Ein neues signiertes Android App Bundle mit `versionCode` 2 erzeugen, den Bundle-Entwurf mit Code 1 ersetzen und die Release-Optimierung vor der Produktionsfreigabe erneut bewerten.
 
 ## Sinnvollster nächster Entwicklungsschritt
 
