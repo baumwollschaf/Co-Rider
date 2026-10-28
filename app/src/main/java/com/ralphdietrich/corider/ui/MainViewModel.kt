@@ -30,7 +30,7 @@ data class MainUiState(
     val activeRoute: GpxRoute? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val isImporting: Boolean = false,
-    val importFailed: Boolean = false,
+    val importFailure: RouteImportFailure? = null,
     val isPreparingRoute: Boolean = false,
     val mapsRouteFailed: Boolean = false,
     val routeDetails: RouteDetails? = null,
@@ -40,7 +40,7 @@ data class MainUiState(
 
 private data class MainOperationState(
     val isImporting: Boolean = false,
-    val importFailed: Boolean = false,
+    val importFailure: RouteImportFailure? = null,
     val isPreparingRoute: Boolean = false,
     val mapsRouteFailed: Boolean = false,
     val detailsRouteId: String? = null,
@@ -68,7 +68,7 @@ class MainViewModel(
             activeRoute = library.activeRoute,
             themeMode = library.themeMode,
             isImporting = operation.isImporting,
-            importFailed = operation.importFailed,
+            importFailure = operation.importFailure,
             isPreparingRoute = operation.isPreparingRoute,
             mapsRouteFailed = operation.mapsRouteFailed,
             routeDetails = operation.routeDetails.takeIf { detailsMatchActiveRoute },
@@ -92,15 +92,20 @@ class MainViewModel(
 
     fun importRoute(uri: Uri) {
         viewModelScope.launch {
-            operationState.update { it.copy(isImporting = true, importFailed = false) }
-            runCatching {
+            operationState.update { it.copy(isImporting = true, importFailure = null) }
+            try {
                 withContext(Dispatchers.IO) {
                     repository.importRoute(ContentResolverGpxImportSource(contentResolver, uri))
                 }
-            }.onFailure {
-                operationState.update { it.copy(importFailed = true) }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                operationState.update {
+                    it.copy(importFailure = error.toRouteImportFailure())
+                }
+            } finally {
+                operationState.update { it.copy(isImporting = false) }
             }
-            operationState.update { it.copy(isImporting = false) }
         }
     }
 
@@ -117,14 +122,16 @@ class MainViewModel(
         if (operationState.value.isPreparingRoute) return
         viewModelScope.launch {
             operationState.update { it.copy(isPreparingRoute = true, mapsRouteFailed = false) }
-            runCatching {
-                withContext(Dispatchers.IO) { repository.createMapsRouteUrl(routeId) }
-            }.onSuccess { url ->
+            try {
+                val url = withContext(Dispatchers.IO) { repository.createMapsRouteUrl(routeId) }
                 mapsUrlChannel.send(url)
-            }.onFailure {
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Throwable) {
                 operationState.update { it.copy(mapsRouteFailed = true) }
+            } finally {
+                operationState.update { it.copy(isPreparingRoute = false) }
             }
-            operationState.update { it.copy(isPreparingRoute = false) }
         }
     }
 
@@ -133,7 +140,7 @@ class MainViewModel(
     }
 
     fun dismissImportError() {
-        operationState.update { it.copy(importFailed = false) }
+        operationState.update { it.copy(importFailure = null) }
     }
 
     fun dismissMapsRouteError() {

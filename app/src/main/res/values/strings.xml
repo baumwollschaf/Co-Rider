@@ -10,6 +10,8 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="community_group_name">125ccm Motorräder Berlin</string>
+    <string name="community_group_description">Ride together. Ride with respect.</string>
     <string name="web_browser_unavailable">No web browser is available.</string>
     <string name="empty_title">Ready for your next ride?</string>
     <string name="empty_description">Choose a GPX file. Co-Rider keeps a private copy in the app’s local storage.</string>
@@ -17,7 +19,9 @@
     <string name="stored_locally">Stored locally</string>
     <string name="open_in_google_maps">Open in Google Maps</string>
     <string name="choose_another_gpx">Choose another GPX file</string>
-    <string name="import_failed">The GPX file could not be imported.</string>
+    <string name="import_invalid_gpx">This file is not a valid GPX document.</string>
+    <string name="import_no_usable_track">This GPX file does not contain a usable route or track.</string>
+    <string name="import_file_unavailable">The selected GPX file could not be read.</string>
     <string name="maps_route_failed">This GPX track could not be opened in Google Maps.</string>
     <string name="route_summary">Original GPX</string>
     <string name="distance">Distance</string>

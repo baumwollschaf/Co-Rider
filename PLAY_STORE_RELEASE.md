@@ -6,7 +6,7 @@ This checklist contains no passwords, private keys, or machine-specific signing 
 
 - App name: `Co-Rider`
 - Application ID/package name: `com.ralphdietrich.corider`
-- Current release: version name `1.0`, version code `2`
+- Current release: version name `1.0.1`, version code `3`
 - Minimum Android version: API 24
 - Target Android version: API 37
 - Distribution format: signed Android App Bundle (`.aab`)
@@ -14,8 +14,14 @@ This checklist contains no passwords, private keys, or machine-specific signing 
 The package name must not be changed after the app has been created in Play Console.
 Every subsequent upload must use a higher version code.
 
-The first accepted production-draft bundle used version code 1. The replacement bundle
-uses version code 2 because it adds the required in-app privacy-policy link.
+The first accepted production-draft bundle used version code 1. Version code 2 added
+the required in-app privacy-policy link. Version code 3 is the `1.0.1` maintenance
+release with clearer GPX import errors and more robust cancellation handling.
+
+## Release notes for 1.0.1
+
+Improved GPX import feedback and minor stability fixes. Added quick access to the
+125ccm Motorräder Berlin community.
 
 ## 1. Create the app in Play Console
 

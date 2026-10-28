@@ -1,6 +1,6 @@
 # Co-Rider – Projektstatus
 
-Stand: 28. September 2026
+Stand: 28. Oktober 2026
 
 ## Kurzstatus
 
@@ -33,6 +33,7 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
   - Historie `Recently used`
   - Theme-Auswahl `System`, `Light`, `Dark`
   - `Privacy policy`, das die öffentliche Datenschutzseite im Browser öffnet
+  - `125ccm Motorräder Berlin`, das die Facebook-Community als externen Link öffnet
 - Empty State mit prominentem GPX-Auswahlbutton.
 - Import und Auswahl eines Historieneintrags führen auf dieselbe Routendetailseite.
 - Die Detailseite zeigt einen lesbar aufbereiteten Tournamen, den unveränderten Dateinamen, Original-GPX-Distanz, niedrigsten und höchsten Höhenpunkt, ein geglättetes Original-GPX-Höhenprofil sowie eine verständliche Qualitätsaussage zur geometrischen Repräsentation.
@@ -56,7 +57,7 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
 - Theme-Default ist `System`; Hell und Dunkel sind ebenfalls persistent auswählbar.
 - Das finale Helm-/Navigationsmotiv ist als klassisches Launcher-Icon für alle Android-Dichten, rundes Icon, Adaptive Icon und vereinfachtes monochromes Themed Icon eingebunden. Das Adaptive Icon verwendet eine eigene, nach innen komponierte Vollbildfassung als Hintergrundebene, damit Android das Motiv unter Kreis- und Squircle-Masken nicht vergrößert anschneidet und kein quadratischer Innenrahmen entsteht. Der Empty State verwendet dasselbe Grundmotiv; die Designquelle der Adaptive-Variante und ein separates 512×512-Store-Asset liegen unter `store-assets`.
 - Automatisches Cloud-Backup und Gerätetransfer sind im Manifest und in den Backup-Regeln für die App-Daten ausgeschlossen.
-- Importfehler werden derzeit als allgemeine Snackbar gemeldet.
+- Importfehler unterscheiden in der Snackbar zwischen ungültigen GPX-Dokumenten, fehlenden nutzbaren Tracks beziehungsweise Routen und nicht lesbaren Dateien.
 
 ## Wichtige Architekturentscheidungen
 
@@ -89,7 +90,7 @@ Der verbindliche Leitsatz für die V1-Routenlogik lautet: **Reduce the complete 
 - Minimum SDK: 24
 - Compile SDK: 37
 - Target SDK: 37
-- Version: `1.0` (`versionCode` 2; der bereits hochgeladene erste Entwurf verwendete Code 1)
+- Version: `1.0.1` (`versionCode` 3; die vorherigen Uploads beziehungsweise Entwürfe verwendeten die Codes 1 und 2)
 - Kotlin: 2.2.10
 - Android Gradle Plugin: 9.4.1
 - Compose BOM: 2026.02.01
@@ -110,6 +111,17 @@ Vorhandene lokale Unit Tests prüfen:
 - Korrekte, URL-kodierte Google-Maps-Parameter und Reihenfolge der Zwischenpunkte.
 - Distanz- und Höhenprofilauswertung, Reduktion der Diagrammpunkte sowie das Ignorieren nicht klassifizierter Standalone-POIs.
 - Importvalidierung mit Entfernung einer ungültigen internen Datei, ohne Historieneintrag zu erzeugen.
+- Klassifizierung von ungültigen GPX-Dokumenten, fehlenden nutzbaren Tracks und Dateizugriffsfehlern für konkrete Importmeldungen.
+
+Letzte vollständige Prüfung am 28. Oktober 2026:
+
+- `gradlew build --no-configuration-cache --no-daemon --console=plain`: erfolgreich.
+- 19 Unit Tests: erfolgreich, keine Fehler oder übersprungenen Tests.
+- Android Lint: 0 Fehler; 10 reine Hinweise auf neuere stabile Bibliotheksversionen.
+- Debug- und Release-APK für Version `1.0.1` (`versionCode` 3): erfolgreich erzeugt.
+- `bundleRelease`: erfolgreich; das AAB für Version `1.0.1` (`versionCode` 3) wurde mit dem privaten Upload-Key signiert und anschließend mit `jarsigner` erfolgreich verifiziert.
+- Coroutine-Abbrüche während GPX-Import und Google-Maps-Aufbereitung werden nicht mehr als Nutzerfehler gemeldet.
+- Der Drawer enthält unterhalb der Datenschutzerklärung einen dezenten Community-Link mit der Unterzeile `Ride together. Ride with respect.`; der Kernworkflow bleibt unverändert.
 
 Letzte vollständige Prüfung am 27. September 2026:
 
@@ -126,7 +138,6 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 
 ## Bekannte Einschränkungen und Risiken
 
-- Fehlerhafte oder inhaltlich unbrauchbare Dateien werden beim Import abgewiesen, erhalten in der UI aber derzeit nur eine allgemeine Fehlermeldung; eine konkrete Diagnose fehlt noch.
 - Bei mehreren Tracks oder Segmenten wird derzeit nur das längste kontinuierliche Segment verwendet. Zusätzliche Segmente führen zur Qualitätsstufe `complex`, werden aber noch nicht einzeln erklärt.
 - Die geometrisch ausgewählten Zwischenpunkte erhöhen die Routentreue, können Google Maps aber nicht zwingen, exakt der ursprünglichen GPX-Spur zu folgen. Ein manueller Vergleich verschiedener Touren steht noch aus.
 - Die Qualitätsstufe ist eine geometrische Heuristik und kein Beweis dafür, dass Google Maps dieselben Straßen wählt. Schwellenwerte müssen mit weiteren realen Motorradtouren praktisch validiert werden.
@@ -138,7 +149,7 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 - Nutzerdefinierte Stops besitzen noch keine Eingabe- oder Persistenzoberfläche. Eine spätere lokale Begleitdatei kann solche Co-Rider-Metadaten aufnehmen, ohne die importierte GPX-Datei zu verändern.
 - Ein Fehler beim nachträglichen Löschen einer verdrängten Datei wird aktuell toleriert; dadurch könnte im Ausnahmefall eine nicht mehr referenzierte Datei im internen Speicher verbleiben.
 - Es gibt noch keine Wartungsroutine, die fehlende oder verwaiste interne Dateien mit den DataStore-Metadaten abgleicht.
-- Das erste signierte `.aab` mit `versionCode` 1 wurde von der Play Console im Produktionsrelease-Entwurf angenommen. Wegen des anschließend ergänzten verpflichtenden In-App-Datenschutzlinks muss es vor der Freigabe durch ein neu signiertes Bundle mit `versionCode` 2 ersetzt werden.
+- Das erste signierte `.aab` mit `versionCode` 1 wurde von der Play Console im Produktionsrelease-Entwurf angenommen. Das aktuelle signierte Maintenance-Bundle verwendet `versionCode` 3 und ersetzt die vorherigen Entwürfe beziehungsweise Uploads.
 - Release-Optimierung und konkrete R8-/Keep-Regeln sind noch nicht für einen Produktionsrelease geprüft.
 - Es wurden noch keine manuellen Tests auf API 24 oder mit Honda RoadSync dokumentiert. Der aktuelle Emulator-Test verwendet API 37.2.
 
@@ -146,15 +157,14 @@ Der vorhandene Instrumentation Test ist weiterhin nur der Template-Test; spezifi
 
 1. Den neuen `Open in Google Maps`-Ablauf auf Emulator und realem Android-Gerät mit mehreren realen Touren manuell vergleichen.
 2. Doppelte GPX-Importe und Namenskollisionen sauber behandeln: Maßgeblich für ein Duplikat soll ein stabiler Fingerabdruck der geparsten, routenrelevanten GPX-Geometrie sein, nicht Dateiname, URI, interne UUID oder unwesentliche XML-Formatierung beziehungsweise Metadaten. Bei gleichem Routeninhalt darf keine zweite interne Kopie und kein zweiter Historieneintrag entstehen; stattdessen wird der vorhandene Eintrag aktiviert und eine kurze englische Meldung mit dessen Anzeigenamen ausgegeben, beispielsweise `This route is already in your history as “%1$s”.` Unterschiedliche Routeninhalte mit demselben Quelldateinamen müssen dagegen beide erhalten bleiben und in Co-Rider eindeutige Anzeigenamen bekommen, beispielsweise `Tour.gpx` und `Tour (2).gpx`; die Quelldateien selbst werden nicht umbenannt. Die Umsetzung benötigt passende Repository- und ViewModel-Tests für identische Inhalte unter gleichen und unterschiedlichen Dateinamen sowie für unterschiedliche Inhalte mit gleichem Dateinamen.
-3. Konkretere, nutzerfreundliche Importfehler für ungültige oder routenlose GPX-Dateien abbilden.
-4. Rundtouren und mehrere Tracksegmente praktisch prüfen und zusätzliche Segmente verständlicher erklären.
-5. Qualitätsgrenzen der Fixed-Budget-RDP-Auswahl anhand weiterer kurzer, langer, kurviger und sich kreuzender Motorradtouren kalibrieren.
-6. Mehrziel-Navigation, automatische Fortsetzung und Honda-RoadSync-Ausgabe praktisch prüfen.
-7. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
-8. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
-9. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
-10. Die fertigen Dateien aus `Pics` in den Store-Eintrag hochladen und die verbleibenden Release-Metadaten finalisieren. Datenschutzseite, GitHub Pages, In-App-Link, Store-Texte und die erforderlichen Store-Grafiken sind vorbereitet. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
-11. Ein neues signiertes Android App Bundle mit `versionCode` 2 erzeugen, den Bundle-Entwurf mit Code 1 ersetzen und die Release-Optimierung vor der Produktionsfreigabe erneut bewerten.
+3. Rundtouren und mehrere Tracksegmente praktisch prüfen und zusätzliche Segmente verständlicher erklären.
+4. Qualitätsgrenzen der Fixed-Budget-RDP-Auswahl anhand weiterer kurzer, langer, kurviger und sich kreuzender Motorradtouren kalibrieren.
+5. Mehrziel-Navigation, automatische Fortsetzung und Honda-RoadSync-Ausgabe praktisch prüfen.
+6. Verwaiste Dateien erkennen und bereinigen sowie Dateilöschfehler nachvollziehbar behandeln.
+7. Das gezielte Löschen eines Historieneintrags vorsehen; bevorzugt direktes Löschen mit Snackbar-Aktion `Undo` statt eines zusätzlichen Bestätigungsdialogs.
+8. Aussagekräftige Compose-UI-/Instrumentierungstests und manuelle Gerätetests ergänzen.
+9. Die fertigen Dateien aus `Pics` in den Store-Eintrag hochladen und die verbleibenden Release-Metadaten finalisieren. Datenschutzseite, GitHub Pages, In-App-Link, Store-Texte und die erforderlichen Store-Grafiken sind vorbereitet. Das App-Icon einschließlich Adaptive-, Round-, Legacy- und monochromer Variante ist fertig eingebunden; die tatsächliche Darstellung unter verschiedenen Launcher-Masken wird noch auf Geräten kontrolliert.
+10. Das signierte Android App Bundle mit `versionCode` 3 in die Play Console hochladen und den Play-ausgelieferten Build vor der Freigabe testen.
 
 ## Sinnvollster nächster Entwicklungsschritt
 
@@ -174,7 +184,7 @@ Der V1-Funktionskern ist weit genug für den entscheidenden Praxistest. Als Näc
 - Signing-Daten ausschließlich über lokale Gradle-Konfiguration oder sichere CI-Secrets bereitstellen.
 - Das separate Repository `co-rider-legal` einchecken, GitHub Pages für `main` und den Root-Ordner aktivieren und anschließend `https://baumwollschaf.github.io/co-rider-legal/` kontrollieren.
 - Den In-App-Link `Privacy policy` im neu gebauten Release testen und diese öffentliche URL in der Play Console eintragen.
-- Ein signiertes Release-`.aab` mit `versionCode` 2 erzeugen, hochladen und den Play-ausgelieferten Build möglichst vor der Produktionsfreigabe auf einem realen Gerät prüfen.
+- Das signierte Release-`.aab` mit `versionCode` 3 hochladen und den Play-ausgelieferten Build möglichst vor der Produktionsfreigabe auf einem realen Gerät prüfen.
 - Vor Veröffentlichung die dann aktuellen Target-SDK-, Data-Safety-, Datenschutz-, Store-Listing- und Richtlinienanforderungen in der Play Console kontrollieren.
 
 ## Repository-Zustand bei dieser Aktualisierung
@@ -184,3 +194,4 @@ Der V1-Funktionskern ist weit genug für den entscheidenden Praxistest. Als Näc
 - Das finale App-Icon wurde aus der bereitgestellten Vorlage ohne den äußeren hellen Rand abgeleitet und in alle Android-Iconvarianten sowie den Empty State übernommen.
 - Die externen Motorrad-Online-Beispieldateien wurden ausschließlich gelesen und nicht in das Repository kopiert.
 - Es wurde kein Commit und kein Push ausgeführt.
+- Der Maintenance-Stand `1.0.1` klassifiziert Importfehler nutzerfreundlich, behandelt Coroutine-Abbrüche korrekt und ergänzt einen dezenten externen Community-Link. Er ist mit 19 Unit Tests sowie einem vollständigen Gradle-Build geprüft.

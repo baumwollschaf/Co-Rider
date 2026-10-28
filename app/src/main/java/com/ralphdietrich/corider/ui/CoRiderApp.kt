@@ -95,13 +95,22 @@ fun CoRiderApp(
     onThemeModeSelected: (ThemeMode) -> Unit,
     onOpenInMaps: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
+    onOpenCommunityGroup: () -> Unit,
     onImportErrorShown: () -> Unit,
     onMapsRouteErrorShown: () -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val importErrorText = stringResource(R.string.import_failed)
+    val importErrorText = uiState.importFailure?.let { failure ->
+        stringResource(
+            when (failure) {
+                RouteImportFailure.INVALID_GPX -> R.string.import_invalid_gpx
+                RouteImportFailure.NO_USABLE_TRACK -> R.string.import_no_usable_track
+                RouteImportFailure.FILE_UNAVAILABLE -> R.string.import_file_unavailable
+            },
+        )
+    }
     val mapsRouteErrorText = stringResource(R.string.maps_route_failed)
     val documentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -111,8 +120,8 @@ fun CoRiderApp(
         documentLauncher.launch(GpxMimeTypes)
     }
 
-    LaunchedEffect(uiState.importFailed) {
-        if (uiState.importFailed) {
+    LaunchedEffect(uiState.importFailure) {
+        if (importErrorText != null) {
             snackbarHostState.showSnackbar(importErrorText)
             onImportErrorShown()
         }
@@ -141,6 +150,10 @@ fun CoRiderApp(
                 onOpenPrivacyPolicy = {
                     coroutineScope.launch { drawerState.close() }
                     onOpenPrivacyPolicy()
+                },
+                onOpenCommunityGroup = {
+                    coroutineScope.launch { drawerState.close() }
+                    onOpenCommunityGroup()
                 },
             )
         },
@@ -190,6 +203,7 @@ private fun AppDrawer(
     onRouteSelected: (String) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
+    onOpenCommunityGroup: () -> Unit,
 ) {
     ModalDrawerSheet(modifier = Modifier.widthIn(max = 360.dp)) {
         LazyColumn(
@@ -258,6 +272,30 @@ private fun AppDrawer(
                     },
                     selected = false,
                     onClick = onOpenPrivacyPolicy,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                )
+                NavigationDrawerItem(
+                    label = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.community_group_name),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = stringResource(R.string.community_group_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    },
+                    selected = false,
+                    onClick = onOpenCommunityGroup,
                     modifier = Modifier.padding(horizontal = 12.dp),
                 )
             }

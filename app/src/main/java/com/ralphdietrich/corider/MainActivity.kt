@@ -45,7 +45,8 @@ class MainActivity : ComponentActivity() {
                     onRouteSelected = viewModel::activateRoute,
                     onThemeModeSelected = viewModel::setThemeMode,
                     onOpenInMaps = viewModel::openActiveRouteInMaps,
-                    onOpenPrivacyPolicy = ::openPrivacyPolicy,
+                    onOpenPrivacyPolicy = { openWebPage(PRIVACY_POLICY_URL) },
+                    onOpenCommunityGroup = { openWebPage(COMMUNITY_GROUP_URL) },
                     onImportErrorShown = viewModel::dismissImportError,
                     onMapsRouteErrorShown = viewModel::dismissMapsRouteError,
                 )
@@ -69,9 +70,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openPrivacyPolicy() {
+    private fun openWebPage(url: String) {
         try {
-            startActivity(Intent(Intent.ACTION_VIEW, PRIVACY_POLICY_URL.toUri()))
+            startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         } catch (_: ActivityNotFoundException) {
             Toast.makeText(this, R.string.web_browser_unavailable, Toast.LENGTH_LONG).show()
         }
@@ -80,5 +81,6 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val GOOGLE_MAPS_PACKAGE = "com.google.android.apps.maps"
         const val PRIVACY_POLICY_URL = "https://baumwollschaf.github.io/co-rider-legal/"
+        const val COMMUNITY_GROUP_URL = "https://www.facebook.com/groups/125ccmmotorraederberlin"
     }
 }
